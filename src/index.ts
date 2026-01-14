@@ -1,74 +1,76 @@
 #!/usr/bin/env node
-import minimist from 'minimist';
-import path from 'node:path';
-import fs from 'node:fs/promises';
+import * as path from 'node:path';
+import * as fsp from 'node:fs/promises';
+import { parseArgs } from './args.js';
 import { scanDirectory } from './scan.js';
 import { processFiles } from './process.js';
 import { replaceOrAppendTags } from './utils.js';
 import { IGNORE_FILE_PATTERNS } from './config.js';
 
-async function main() {
-    const argv = minimist(process.argv.slice(2), {
-        string: ['f', 'chars'],
-        boolean: ['follow', 'docs'],
-        alias: {
-            f: 'follow',
-            l: 'lines',
-            c: 'chars',
-            d: 'docs',
-        }
-    });
+export interface RunOptions {
+    root: string;
+    follow: boolean;
+    excludeDocs: boolean;
+    lines?: number;
+    chars?: number;
+}
 
-    const follow = argv.follow || argv.f || false;
-    const excludeDocs = argv.docs || argv.d || false;
-    const lines = argv.lines || argv.l ? parseInt(String(argv.lines || argv.l), 10) : undefined;
-    const chars = argv.chars ? parseInt(String(argv.chars), 10) : undefined;
-
-    const targetDir = argv._[0] || '.';
-    const root = path.resolve(targetDir);
-
-    // Check and create .agentsignore if missing
+export const ensureDefaultAgentsIgnore = async (root: string): Promise<void> => {
     const agentsIgnorePath = path.join(root, '.agentsignore');
     try {
-        await fs.access(agentsIgnorePath);
+        await fsp.access(agentsIgnorePath);
     } catch {
-        // File does not exist, create it
         try {
-            await fs.writeFile(agentsIgnorePath, IGNORE_FILE_PATTERNS, 'utf-8');
+            await fsp.writeFile(agentsIgnorePath, IGNORE_FILE_PATTERNS, 'utf-8');
             console.log(`Created default .agentsignore at ${agentsIgnorePath}`);
         } catch (e) {
             console.warn(`Warning: Could not create default .agentsignore:`, e);
         }
     }
+};
 
+export const run = async (opts: RunOptions): Promise<void> => {
+    await ensureDefaultAgentsIgnore(opts.root);
+
+    const files = await scanDirectory({ cwd: opts.root, follow: opts.follow, excludeDocs: opts.excludeDocs });
+    const displayFiles = files.filter((f) => path.basename(f) !== 'agents.md');
+
+    const sourceCode = await processFiles({
+        files: displayFiles,
+        root: opts.root,
+        lineLimit: opts.lines,
+        charLimit: opts.chars
+    });
+
+    const agentsMdPath = path.join(opts.root, 'agents.md');
+    let existingContent = '';
     try {
-        const files = await scanDirectory({ cwd: root, follow: !!follow, excludeDocs: !!excludeDocs });
-        const displayFiles = files.filter(f => path.basename(f) !== 'agents.md');
+        existingContent = await fsp.readFile(agentsMdPath, 'utf-8');
+    } catch {
+        // create fresh file later
+    }
 
-        const sourceCode = await processFiles({
-            files: displayFiles,
+    const newContent = replaceOrAppendTags(existingContent, sourceCode);
+    await fsp.writeFile(agentsMdPath, newContent, 'utf-8');
+    console.log(`Successfully updated ${agentsMdPath} with ${displayFiles.length} files.`);
+};
+
+const main = async (): Promise<void> => {
+    try {
+        const args = parseArgs(process.argv.slice(2));
+        const root = path.resolve(args.targetDir);
+
+        await run({
             root,
-            lineLimit: lines,
-            charLimit: chars
+            follow: args.follow,
+            excludeDocs: args.excludeDocs,
+            lines: args.lines,
+            chars: args.chars
         });
-
-        const agentsMdPath = path.join(root, 'agents.md');
-        let existingContent = '';
-        try {
-            existingContent = await fs.readFile(agentsMdPath, 'utf-8');
-        } catch (e) {
-            // file doesn't exist, start empty
-        }
-
-        const newContent = replaceOrAppendTags(existingContent, sourceCode);
-
-        await fs.writeFile(agentsMdPath, newContent, 'utf-8');
-        console.log(`Successfully updated ${agentsMdPath} with ${displayFiles.length} files.`);
-
     } catch (error) {
         console.error('Error:', error);
         process.exit(1);
     }
-}
+};
 
 main();

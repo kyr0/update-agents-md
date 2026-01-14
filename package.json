@@ -1,6 +1,6 @@
 {
   "name": "update-agents-md",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "CLI tool to aggregate text files into agents.md",
   "type": "module",
   "bin": {
@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "pkgroll",
-    "test": "node test.mjs",
+    "test": "vitest run --reporter=verbose",
     "security": "pnpm audit",
     "prepublishOnly": "pnpm run build"
   },
@@ -33,6 +33,7 @@
     "@types/minimist": "^1.2.5",
     "@types/node": "^25.0.8",
     "pkgroll": "^2.21.5",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.3"
   }
 }

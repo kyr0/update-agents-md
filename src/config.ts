@@ -50,9 +50,10 @@ docs
 *.tgz
 *.rar
 *.7z
+agents.md
 `;
 
-export const DOCS_FILE_PATTERNS = [
+export const DOCS_FILE_PATTERNS: Array<string> = [
     '*.md',
     '*.markdown',
     '*.asciidoc',
@@ -61,7 +62,10 @@ export const DOCS_FILE_PATTERNS = [
     'LICENSE',
     'LICENSE*',
     'CHANGELOG',
-    'CHANGELOG*',
+    'CHANGELOG*'
 ];
 
-export const IGNORE_FILES = ['.gitignore', '.agentsignore'];
+export const IGNORE_FILES: Array<string> = ['.gitignore', '.agentsignore'];
+
+export const OPEN_TAG = '<full-context-dump>';
+export const CLOSE_TAG = '</full-context-dump>';

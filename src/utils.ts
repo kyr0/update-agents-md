@@ -1,86 +1,68 @@
-import fs from 'node:fs/promises';
+import { Buffer } from 'node:buffer';
+import * as fsp from 'node:fs/promises';
+import { OPEN_TAG, CLOSE_TAG } from './config.js';
 
 /**
- * Checks if a buffer contains binary data.
- * Considers data binary if it contains a NUL byte or has too many non-printable control characters
- * within the first 512 bytes.
+ * checks if a buffer contains binary data via simple heuristic
  */
-export function isBinary(buffer: Buffer): boolean {
+export const isBinary = (buffer: Buffer): boolean => {
     const length = Math.min(buffer.length, 512);
     let suspicionScore = 0;
 
     for (let i = 0; i < length; i++) {
         const byte = buffer[i];
 
-        // NUL byte is a strong indicator of binary data
-        if (byte === 0x00) {
-            return true;
-        }
+        // NUL is a strong binary indicator
+        if (byte === 0x00) return true;
 
-        // Check for non-printable control characters (excluding whitespace like tab, lf, cr)
-        // ASCII control chars: 0-31, 127. 
-        // Allowed: 9 (TAB), 10 (LF), 13 (CR)
+        // control characters except TAB(9), LF(10), CR(13)
         if ((byte < 32 && byte !== 9 && byte !== 10 && byte !== 13) || byte === 127) {
             suspicionScore++;
         }
     }
 
-    // If more than 10% of the checked bytes are suspicious, treat as binary
-    if (length > 0 && (suspicionScore / length) > 0.1) {
-        return true;
-    }
+    return length > 0 && suspicionScore / length > 0.1;
+};
 
-    return false;
-}
-
-export async function isBinaryFile(filePath: string): Promise<boolean> {
-    let handle: fs.FileHandle | undefined;
+/**
+ * reads first 512 bytes to detect binary-ish files; on error we treat as binary/skippable
+ */
+export const isBinaryFile = async (filePath: string): Promise<boolean> => {
+    let handle: fsp.FileHandle | undefined;
     try {
-        handle = await fs.open(filePath, 'r');
+        handle = await fsp.open(filePath, 'r');
         const buffer = Buffer.alloc(512);
         const result = await handle.read(buffer, 0, 512, 0);
-        if (result.bytesRead === 0) {
-            return false; // Empty file is text
-        }
+        if (result.bytesRead === 0) return false;
         return isBinary(buffer.subarray(0, result.bytesRead));
-    } catch (error) {
-        // If we can't read it, assume it's risky/binary or just skip? 
-        // Default to treating as binary/skippable if read fails
+    } catch {
+        // reading failed -> skip it defensively
         return true;
     } finally {
         await handle?.close();
     }
-}
+};
 
-export function replaceOrAppendTags(content: string, sourceCode: string): string {
-    const openTag = '<full-context-dump>';
-    const closeTag = '</full-context-dump>';
-
-    const newContentBlock = `${openTag}\n${sourceCode}\n${closeTag}`;
-
-    const startIndex = content.indexOf(openTag);
-    // Search from end
-    const endIndex = content.lastIndexOf(closeTag);
+/**
+ * replaces any existing <full-context-dump>...</full-context-dump> block(s)
+ * with the given sourceCode; if not present, appends a fresh block
+ */
+export const replaceOrAppendTags = (content: string, sourceCode: string): string => {
+    const newContentBlock = `${OPEN_TAG}\n${sourceCode}\n${CLOSE_TAG}`;
+    const startIndex = content.indexOf(OPEN_TAG);
+    const endIndex = content.lastIndexOf(CLOSE_TAG);
 
     if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
-        // Replace everything between the *start* of the first open tag 
-        // and the *end* of the last close tag.
-
         const pre = content.substring(0, startIndex);
-        const post = content.substring(endIndex + closeTag.length);
+        const post = content.substring(endIndex + CLOSE_TAG.length);
         return pre + newContentBlock + post;
     }
 
     if (startIndex !== -1 && endIndex === -1) {
-        // Has start but no end? Replace from start to end of string with new block.
         const pre = content.substring(0, startIndex);
         return pre + newContentBlock;
     }
 
-    // Fallback: Check for self-closing if distinct?
-    // User logic "find first match ... search back ... replace" is robust against nested or multiple blocks.
-
-    // If we didn't find the pair, append to end.
     const prefix = content.endsWith('\n') ? '' : '\n';
     return `${content}${prefix}\n${newContentBlock}\n`;
-}
+};
