@@ -1,6 +1,7 @@
-import { Buffer } from 'node:buffer';
-import * as fsp from 'node:fs/promises';
-import { OPEN_TAG, CLOSE_TAG } from './config.js';
+import { Buffer } from "node:buffer";
+import { open } from "node:fs/promises";
+import type { FileHandle } from "node:fs/promises";
+import { OPEN_TAG, CLOSE_TAG } from "./config.js";
 
 /**
  * checks if a buffer contains binary data via simple heuristic
@@ -28,11 +29,13 @@ export const isBinary = (buffer: Buffer): boolean => {
  * reads first 512 bytes to detect binary-ish files; on error we treat as binary/skippable
  */
 export const isBinaryFile = async (filePath: string): Promise<boolean> => {
-    let handle: fsp.FileHandle | undefined;
+    let handle: FileHandle | undefined;
+
     try {
-        handle = await fsp.open(filePath, 'r');
+        handle = await open(filePath, "r");
         const buffer = Buffer.alloc(512);
         const result = await handle.read(buffer, 0, 512, 0);
+
         if (result.bytesRead === 0) return false;
         return isBinary(buffer.subarray(0, result.bytesRead));
     } catch {
@@ -63,6 +66,6 @@ export const replaceOrAppendTags = (content: string, sourceCode: string): string
         return pre + newContentBlock;
     }
 
-    const prefix = content.endsWith('\n') ? '' : '\n';
+    const prefix = content.endsWith("\n") ? "" : "\n";
     return `${content}${prefix}\n${newContentBlock}\n`;
 };

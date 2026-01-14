@@ -27,4 +27,22 @@ describe('scanDirectory', () => {
         expect(rel).not.toContain(path.join('ignored_folder', 'secret.txt'));
         expect(rel).not.toContain('agents.md');
     });
+
+    it('supports directory-specific ignore patterns (e.g. "config/")', async () => {
+        const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'scan-dir-'));
+
+        // Create a directory structure
+        await fsp.mkdir(path.join(dir, 'config'), { recursive: true });
+        await fsp.writeFile(path.join(dir, 'config', 'secret.json'), '{}');
+        await fsp.writeFile(path.join(dir, 'config.json'), '{}'); // Should NOT be ignored
+
+        // Add "config/" to .agentsignore
+        await fsp.writeFile(path.join(dir, '.agentsignore'), 'config/\n');
+
+        const files = await scanDirectory({ cwd: dir, follow: false, excludeDocs: false });
+        const rel = files.map((f) => path.relative(dir, f));
+
+        expect(rel).toContain('config.json');
+        expect(rel).not.toContain(path.join('config', 'secret.json'));
+    });
 });

@@ -1,4 +1,4 @@
-import minimist from 'minimist';
+import minimist from "minimist";
 
 export interface CliArgs {
     follow: boolean;
@@ -6,26 +6,46 @@ export interface CliArgs {
     lines?: number;
     chars?: number;
     targetDir: string;
+    help: boolean;
 }
+
+export const parseOptionalInt = (value: unknown, fallback?: unknown): number | undefined => {
+    const raw = value ?? fallback;
+    if (raw === undefined) return undefined;
+
+    const parsed = typeof raw === "number" ? raw : Number.parseInt(String(raw), 10);
+    if (!Number.isFinite(parsed) || Number.isNaN(parsed)) {
+        throw new Error(`invalid numeric value: "${String(raw)}"`);
+    }
+
+    return parsed;
+};
 
 export const parseArgs = (argv: Array<string>): CliArgs => {
     const parsed = minimist(argv, {
-        string: ['f', 'chars'],
-        boolean: ['follow', 'docs'],
+        boolean: ["follow", "docs", "help"],
         alias: {
-            f: 'follow',
-            l: 'lines',
-            c: 'chars',
-            d: 'docs'
-        }
+            f: "follow",
+            l: "lines",
+            c: "chars",
+            d: "docs",
+            h: "help",
+        },
+        default: {
+            follow: false,
+            docs: false,
+            help: false,
+        },
     });
 
-    const follow = Boolean(parsed.follow || parsed.f);
-    const excludeDocs = Boolean(parsed.docs || parsed.d);
-    const lines = parsed.lines || parsed.l ? parseInt(String(parsed.lines ?? parsed.l), 10) : undefined;
-    const chars = parsed.chars ? parseInt(String(parsed.chars), 10) : undefined;
+    const follow = Boolean(parsed.follow);
+    // --docs currently means "exclude docs" (kept for backward-compat with your tests/behavior)
+    const excludeDocs = Boolean(parsed.docs);
 
-    const targetDir = parsed._[0] || '.';
+    const lines = parseOptionalInt(parsed.lines, parsed.l);
+    const chars = parseOptionalInt(parsed.chars, parsed.c);
 
-    return { follow, excludeDocs, lines, chars, targetDir };
+    const targetDir = typeof parsed._[0] === "string" ? parsed._[0] : ".";
+
+    return { follow, excludeDocs, lines, chars, targetDir, help: Boolean(parsed.help) };
 };
