@@ -9,9 +9,9 @@ A tiny, fast, cross-platform Node.js CLI tool to aggregate meaningful source cod
 Let's face it: Agents are cool, but it sucks to wait for minutes, and then get a mediocre result when internal context retrieval from vector database hit a semantic limit.
 Sub-agent architectures and recursive/graph agent architectures were introduced to address this issue, but they are still in their infancy and often require significant orchestration effort - only to yield even MORE WAIT TIME and COST.
 
-But there's a simple, stupid solution. While VENDORS optimize for cost/RoI (more tokens -> better RoI as YOU PAY), models became less and less limited in their context window.For most projects, when we remove all irrlelevant semantic context, we can fit the entire codebase into the context window by now.
+But there's a simple, stupid solution. While VENDORS optimize for cost/RoI (more tokens -> better RoI as YOU PAY), models became less and less limited in their context window. For most projects, when we remove all irrlelevant semantic context, we can fit the entire codebase into the context window by now.
 
-If we do so, we can APPLY THE GENIOUS MOVE: 
+If we do so, we can find a local maxima for cost and performance: 
 - We pay less for tokens as we process the whole codebase, BUT ONLY ONCE.
 - We get better results because the model MUST READ ALL CODE before it can start reasoning.
 - We get faster results because sub-agents/graphs/recursive agent architectures often become obsolete for code-only reasoning tasks. 
