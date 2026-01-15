@@ -201,6 +201,7 @@ docs
 
 # --- Agent-specific / meta docs ---
 agents.md
+.agentsignore
 `;
 
 export const DOCS_FILE_PATTERNS: Array<string> = [
