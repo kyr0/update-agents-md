@@ -1,6 +1,6 @@
 {
   "name": "update-agents-md",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "CLI tool to aggregate text files into agents.md",
   "type": "module",
   "bin": {
