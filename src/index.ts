@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import * as path from "node:path";
+import * as fs from "node:fs";
 import { access, readFile, writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "./args.js";
@@ -92,8 +93,10 @@ export const isDirectCliInvocation = (): boolean => {
     const entry = process.argv[1];
     if (!entry) return false;
 
-    // compare file:// urls to reliably detect direct execution in ESM
-    return import.meta.url === pathToFileURL(path.resolve(entry)).href;
+    // resolve symlinks (e.g. npx creates symlinks in .bin/) before comparing
+    // file:// urls to reliably detect direct execution in ESM
+    const resolvedEntry = fs.realpathSync(path.resolve(entry));
+    return import.meta.url === pathToFileURL(resolvedEntry).href;
 };
 
 if (isDirectCliInvocation()) {
