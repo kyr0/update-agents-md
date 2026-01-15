@@ -34,15 +34,22 @@ async function run() {
     await fs.writeFile(path.join(TEST_DIR, 'ignored_folder/secret.txt'), 'secret');
 
     // Explicitly Ignored via .gitignore
-    await fs.writeFile(path.join(TEST_DIR, '.gitignore'), 'git_ignored.txt\n');
+    await fs.writeFile(path.join(TEST_DIR, '.gitignore'), 'git_ignored.txt\nignored.ts\n');
     await fs.writeFile(path.join(TEST_DIR, 'git_ignored.txt'), 'should be ignored by git');
+    await fs.writeFile(path.join(TEST_DIR, 'ignored.ts'), 'should be ignored even with -i *.ts');
 
     // Nested file (should be included)
     await fs.mkdir(path.join(TEST_DIR, 'src'), { recursive: true });
     await fs.writeFile(path.join(TEST_DIR, 'src/code.ts'), 'console.log("hello")');
+    await fs.writeFile(path.join(TEST_DIR, 'src/utils.ts'), 'export const foo = 1;');
+    await fs.writeFile(path.join(TEST_DIR, 'src/style.css'), 'body { color: red; }');
 
-    // Documentation file
+    // Documentation files
     await fs.writeFile(path.join(TEST_DIR, 'README.md'), '# My Docs');
+    await fs.writeFile(path.join(TEST_DIR, 'LICENSE'), 'MIT License');
+    await fs.writeFile(path.join(TEST_DIR, 'LICENSE.txt'), 'MIT License text');
+    await fs.writeFile(path.join(TEST_DIR, 'COPYING'), 'GPL License');
+    await fs.writeFile(path.join(TEST_DIR, 'CHANGELOG.md'), '# Changelog');
 
     console.log('Files created.');
 
@@ -69,6 +76,7 @@ async function run() {
         assert.ok(result.includes('./included.txt:'), 'Should include root included file');
         assert.ok(result.includes('./src/code.ts:'), 'Should include nested file');
         assert.ok(result.includes('./README.md:'), 'Should include README.md by default');
+        assert.ok(result.includes('./LICENSE:'), 'Should include LICENSE by default');
 
         assert.ok(!result.includes('./node_modules/bad.txt:'), 'Should ignore node_modules by default');
         assert.ok(!result.includes('./.git/config:'), 'Should ignore .git by default');
@@ -81,17 +89,6 @@ async function run() {
         // 4. Run the tool (With --docs)
         // ============
         console.log(`Running ${binPath} in ${TEST_DIR} with --docs...`);
-        // Remove agents.md to ensure clean slate check logic? Or it just updates/overwrites?
-        // The tool logic is to read existing and append/replace. 
-        // If we want to test exclusion, if it was already there, `replaceOrAppendTags` might keep it?
-        // Let's check `replaceOrAppendTags` logic. 
-        // Actually, scan returns files. processFiles returns *collected* content for those files.
-        // `replaceOrAppendTags` replaces content *between tags* or appends.
-        // If `agents.md` is NOT structured with tags, it just appends?
-        // Wait, if I run it again, does it clear the old one?
-        // No, `replaceOrAppendTags` is smarter.
-
-        // Let's just delete agents.md before second run to be sure we are testing generation.
         await fs.rm(agentsMdPath);
 
         await execAsync(`node ${binPath} --docs`, { cwd: TEST_DIR });
@@ -99,10 +96,48 @@ async function run() {
 
         assert.ok(result.includes('./included.txt:'), 'Should still include root file with --docs');
         assert.ok(!result.includes('./README.md:'), 'Should EXCLUDE README.md with --docs');
+        assert.ok(!result.includes('./LICENSE:'), 'Should EXCLUDE LICENSE with --docs');
+        assert.ok(!result.includes('./LICENSE.txt:'), 'Should EXCLUDE LICENSE.txt with --docs');
+        assert.ok(!result.includes('./COPYING:'), 'Should EXCLUDE COPYING with --docs');
+        assert.ok(!result.includes('./CHANGELOG.md:'), 'Should EXCLUDE CHANGELOG.md with --docs');
 
         console.log('✅ --docs checks passed!');
 
-        // 5. Check Robust Replacement (Multiple Blocks)
+        // 5. Run the tool (With -i include patterns)
+        // ============
+        console.log(`Running ${binPath} in ${TEST_DIR} with -i "*.ts"...`);
+        await fs.rm(agentsMdPath);
+
+        await execAsync(`node ${binPath} -i "*.ts"`, { cwd: TEST_DIR });
+        result = await fs.readFile(agentsMdPath, 'utf-8');
+
+        // Should ONLY include .ts files
+        assert.ok(result.includes('./src/code.ts:'), 'Should include code.ts with -i "*.ts"');
+        assert.ok(result.includes('./src/utils.ts:'), 'Should include utils.ts with -i "*.ts"');
+        assert.ok(!result.includes('./included.txt:'), 'Should EXCLUDE .txt files with -i "*.ts"');
+        assert.ok(!result.includes('./src/style.css:'), 'Should EXCLUDE .css files with -i "*.ts"');
+        assert.ok(!result.includes('./README.md:'), 'Should EXCLUDE .md files with -i "*.ts"');
+
+        // .gitignore should still be respected even with -i
+        assert.ok(!result.includes('./ignored.ts:'), 'Should STILL respect .gitignore with -i');
+
+        console.log('✅ -i include pattern checks passed!');
+
+        // 6. Run the tool (With -i multiple patterns)
+        // ============
+        console.log(`Running ${binPath} in ${TEST_DIR} with -i "*.ts, *.css"...`);
+        await fs.rm(agentsMdPath);
+
+        await execAsync(`node ${binPath} -i "*.ts, *.css"`, { cwd: TEST_DIR });
+        result = await fs.readFile(agentsMdPath, 'utf-8');
+
+        assert.ok(result.includes('./src/code.ts:'), 'Should include .ts with multiple patterns');
+        assert.ok(result.includes('./src/style.css:'), 'Should include .css with multiple patterns');
+        assert.ok(!result.includes('./included.txt:'), 'Should EXCLUDE .txt with multiple patterns');
+
+        console.log('✅ -i multiple pattern checks passed!');
+
+        // 7. Check Robust Replacement (Multiple Blocks)
         // ============
         console.log('Testing robust replacement...');
         const brokenContent = `
@@ -148,6 +183,8 @@ Footer
     // Cleanup
     await fs.rm(TEST_DIR, { recursive: true, force: true });
     console.log('Cleanup done.');
+    console.log('\n✅ All e2e tests passed!');
 }
 
 run();
+

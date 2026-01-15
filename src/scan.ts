@@ -9,12 +9,16 @@ export interface ScanOptions {
     follow: boolean;
     debug?: boolean;
     excludeDocs?: boolean;
+    /** When provided, only files matching these glob patterns are included (exclusive include mode) */
+    includePatterns?: Array<string>;
 }
 
 export interface TraverseState {
     files: Array<string>;
     follow: boolean;
     visitedRealDirs: Set<string>;
+    /** When set, only files matching these patterns are included */
+    includePatterns: Array<string>;
 }
 
 export type EntryKind = "dir" | "file" | "skip";
@@ -32,6 +36,56 @@ export const getEntryKind = async (entry: Dirent, systemPath: string, follow: bo
     if (st.isDirectory()) return "dir";
     if (st.isFile()) return "file";
     return "skip";
+};
+
+/**
+ * Converts a simple glob pattern like *.ts to a regex.
+ * Supports: * (any chars except /), ? (single char), ** (any path)
+ */
+export const globToRegex = (pattern: string): RegExp => {
+    let regex = "";
+    let i = 0;
+
+    while (i < pattern.length) {
+        const char = pattern[i];
+        if (char === "*") {
+            if (pattern[i + 1] === "*") {
+                // ** matches any path
+                regex += ".*";
+                i += 2;
+                continue;
+            }
+            // * matches any chars except /
+            regex += "[^/]*";
+        } else if (char === "?") {
+            regex += "[^/]";
+        } else if (".+^${}|[]\\()".includes(char)) {
+            regex += `\\${char}`;
+        } else {
+            regex += char;
+        }
+        i++;
+    }
+
+    return new RegExp(`^${regex}$`, "i");
+};
+
+/**
+ * Checks if a filename matches any of the include patterns.
+ * Patterns are matched against the basename (e.g., "file.ts") and
+ * can use wildcards like *.ts, *.c, foo*.txt
+ */
+export const matchesIncludePatterns = (filename: string, patterns: Array<string>): boolean => {
+    if (patterns.length === 0) return true; // no filtering when no patterns
+
+    const basename = path.basename(filename);
+
+    for (const pattern of patterns) {
+        const regex = globToRegex(pattern);
+        if (regex.test(basename)) return true;
+    }
+
+    return false;
 };
 
 /**
@@ -149,7 +203,9 @@ export const traverseDirectory = async (
             continue;
         }
 
-        // kind === "file"
+        // kind === "file" - check include patterns if in exclusive include mode
+        if (!matchesIncludePatterns(entry.name, state.includePatterns)) continue;
+
         state.files.push(systemPath);
     }
 };
@@ -158,7 +214,7 @@ export const traverseDirectory = async (
  * recursively scans a directory with layered .gitignore / .agentsignore handling
  */
 export const scanDirectory = async (options: ScanOptions): Promise<Array<string>> => {
-    const { cwd, follow, excludeDocs = false } = options;
+    const { cwd, follow, excludeDocs = false, includePatterns = [] } = options;
 
     const baseIgnore = IGNORE_FILE_PATTERNS.split(/\r?\n/);
     if (excludeDocs) baseIgnore.push(...DOCS_FILE_PATTERNS);
@@ -169,6 +225,7 @@ export const scanDirectory = async (options: ScanOptions): Promise<Array<string>
         files: [],
         follow,
         visitedRealDirs: new Set<string>(),
+        includePatterns,
     };
 
     await traverseDirectory(state, cwd, "", defaultPatterns, excludeDocs);

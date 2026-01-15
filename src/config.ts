@@ -1,34 +1,163 @@
 export const IGNORE_FILE_PATTERNS = `# Auto-generated .agentsignore
-# Package Managers & Locks
+# ============================================================
+# Goal: keep source + config, drop generated, binary, cache, deps, secrets
+# ============================================================
+
+# --- Version Control ---
+.git
+.hg
+.svn
+
+# --- Package Managers & Locks ---
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
 bun.lockb
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 Cargo.lock
 Gemfile.lock
 composer.lock
+poetry.lock
+Pipfile.lock
 
-# IDEs & Editors
-.git
+# --- IDEs & Editors ---
 .idea
 .vscode
-.DS_Store
+*.code-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
 *.swp
+*.swo
+*.tmp
+.DS_Store
+Thumbs.db
+*.bak
+*.orig
 
-# Testing & Coverage
+# --- Secrets / Credentials (safety) ---
+.env
+.env.*
+!.env.example
+!.env.sample
+.envrc
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+*.asc
+*.gpg
+*.kdbx
+
+# --- Logs ---
+*.log
+logs
+log
+
+# --- OS / Temp ---
+tmp
+temp
+*.pid
+*.seed
+
+# --- Testing & Coverage ---
 coverage
 .nyc_output
+*.lcov
+*.lcov.info
+test-results
+junit.xml
+playwright-report
 
-# Build & Dist
+# --- Build / Dist / Artifacts ---
 dist
 build
 out
 target
 bin
 obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.o
+*.obj
+*.pdb
+*.dSYM
+*.class
+*.jar
+*.war
+*.ear
+*.apk
+*.aab
 
-# Documentation & Assets
+# --- Caches ---
+.cache
+.parcel-cache
+.turbo
+.vite
+.eslintcache
+.stylelintcache
+.rspack-cache
+.rollup.cache
+storybook-static
+.next
+.nuxt
+.svelte-kit
+.angular
+.output
+
+# --- Dependencies / Vendored ---
 node_modules
+vendor
+bower_components
+
+# --- Python ---
+__pycache__
+*.py[cod]
+*.pyd
+.venv
+venv
+env
+.conda
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.tox
+.eggs
+*.egg-info
+pip-wheel-metadata
+
+# --- Java / Kotlin / Gradle ---
+.gradle
+.mvn
+.classpath
+.project
+.settings
+
+# --- Go ---
+pkg
+*.test
+
+# --- Ruby ---
+.bundle
+vendor/bundle
+
+# --- Elixir / Erlang ---
+_build
+deps
+
+# --- Haskell ---
+dist-newstyle
+.stack-work
+
+# --- Documentation & Large Assets ---
 docs
 *.pdf
 *.jpg
@@ -37,19 +166,40 @@ docs
 *.gif
 *.ico
 *.svg
+*.webp
+*.psd
+*.ai
+*.sketch
+*.fig
 *.woff
 *.woff2
 *.ttf
 *.eot
 *.mp4
 *.webm
+*.mov
 *.mp3
 *.wav
+
+# --- Archives / Dumps ---
 *.zip
+*.tar
+*.gz
 *.tar.gz
 *.tgz
 *.rar
 *.7z
+*.iso
+*.dmg
+
+# --- Databases / Local data ---
+*.sqlite
+*.sqlite3
+*.db
+*.mdb
+*.rdb
+
+# --- Agent-specific / meta docs ---
 agents.md
 `;
 
@@ -59,10 +209,20 @@ export const DOCS_FILE_PATTERNS: Array<string> = [
     '*.asciidoc',
     '*.adoc',
     '*.rst',
+    '*.asc',
     'LICENSE',
     'LICENSE*',
+    'LICENSE-*',
+    'COPYING',
+    'COPYING*',
     'CHANGELOG',
-    'CHANGELOG*'
+    'CHANGELOG*',
+    'CONTRIBUTING',
+    'CONTRIBUTING*',
+    'CODE_OF_CONDUCT',
+    'CODE_OF_CONDUCT*',
+    'CONTRIBUTORS',
+    'CONTRIBUTORS*',
 ];
 
 export const IGNORE_FILES: Array<string> = ['.gitignore', '.agentsignore'];

@@ -15,6 +15,7 @@ export interface RunOptions {
     excludeDocs: boolean;
     lines?: number;
     chars?: number;
+    includePatterns?: Array<string>;
 }
 
 export const printHelp = (): void => {
@@ -23,11 +24,13 @@ usage:
   update-agents-md [targetDir] [options]
 
 options:
-  -f, --follow         follow symlinks (guards against cycles)
-  -d, --docs           exclude documentation files (current behavior)
-  -l, --lines <n>      limit each file to n lines
-  -c, --chars <n>      limit total output to n chars
-  -h, --help           show help
+  -f, --follow             follow symlinks (guards against cycles)
+  -d, --docs               exclude documentation files (LICENSE, README, etc.)
+  -i, --include <patterns> only include files matching patterns (comma-separated globs)
+                           example: -i "*.ts, *.c" includes only .ts and .c files
+  -l, --lines <n>          limit each file to n lines
+  -c, --chars <n>          limit total output to n chars
+  -h, --help               show help
 `.trim());
 };
 
@@ -49,7 +52,12 @@ export const ensureDefaultAgentsIgnore = async (root: string): Promise<void> => 
 export const run = async (opts: RunOptions): Promise<void> => {
     await ensureDefaultAgentsIgnore(opts.root);
 
-    const files = await scanDirectory({ cwd: opts.root, follow: opts.follow, excludeDocs: opts.excludeDocs });
+    const files = await scanDirectory({
+        cwd: opts.root,
+        follow: opts.follow,
+        excludeDocs: opts.excludeDocs,
+        includePatterns: opts.includePatterns,
+    });
 
     // avoid self-inclusion even if user un-ignores it
     const displayFiles = files.filter((f) => path.basename(f) !== "agents.md");
@@ -86,6 +94,7 @@ export const main = async (argv: Array<string>): Promise<void> => {
         excludeDocs: args.excludeDocs,
         lines: args.lines,
         chars: args.chars,
+        includePatterns: args.includePatterns,
     });
 };
 
