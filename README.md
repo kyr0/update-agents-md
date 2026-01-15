@@ -22,10 +22,10 @@ Why? Because simple tool use often is enough in the main agent run to fulfill th
 
 When working with AI assistants (Claude, ChatGPT, Gemini, Copilot, etc.), context is everything. Instead of hoping your IDE integration captures what's needed, `agents.md` contains your entire relevant codebase by running `npx update-agents-md` regularly (e.g. file save action in your IDE):
 
-- **Unlock flexibility - Works with any IDE, any model**: Copy-paste the contents of `agents.md` directly into *any* AI chat interface—no IDE integration required. The model/Agent is now **forced** to see everything it needs, immediately
+- **Unlock flexibility - Works with any IDE, any model**: Copy-paste the contents of `agents.md` directly into *any* AI chat interface - no IDE integration required. The model/Agent is now **forced** to see everything it needs, immediately
 - **Zero missing context**: The agent sees everything it needs, immediately - no hallucinations caused by sub-optimal vector database retrieval (see paper: [On the Theoretical Limitations of Embedding-Based Retrieval
 ](https://arxiv.org/abs/2508.21038))
-- **Get a second opinion**: Easily share your codebase with alternative models to compare suggestions -- pass these to your Agents via Copy & Paste. Full context cross-model/cross-vendor feedback looks improve code quality when using top-tier models 
+- **Get a second opinion**: Easily share your codebase with alternative models to compare suggestions -- pass these to your Agents via Copy & Paste. Full context cross-model/cross-vendor feedback likely improves code quality when using top-tier models 
 - **Works offline**: No API keys or cloud connections needed for the aggregation itself -- you may use local models too; you don't even need an IDE. Now you can manually copy the whole codebase into any web based AI chat interface -- the results will still be stunning (although you'd have to manually merge -- so DO USE IDE's and Agents.. ;).
 
 **Scales well for small to medium projects:**
