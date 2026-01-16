@@ -8,6 +8,8 @@ export interface ProcessOptions {
     lineLimit?: number;
     charLimit?: number;
     concurrency?: number;
+    /** Map of .ts file path -> generated .d.ts content */
+    dtsMap?: Map<string, string>;
 }
 
 /**
@@ -46,7 +48,7 @@ export const readAndMaybeTrim = async (filePath: string, lineLimit?: number): Pr
  * builds the aggregated markdown snippet
  */
 export const processFiles = async (options: ProcessOptions): Promise<string> => {
-    const { files, root, lineLimit, charLimit, concurrency = 20 } = options;
+    const { files, root, lineLimit, charLimit, concurrency = 20, dtsMap } = options;
 
     naturalSortInPlace(files);
 
@@ -83,6 +85,23 @@ export const processFiles = async (options: ProcessOptions): Promise<string> => 
         }
 
         collected += entry;
+
+        // If this is a .ts file and we have generated .d.ts content, append it
+        if (dtsMap && filePath.endsWith(".ts") && !filePath.endsWith(".d.ts")) {
+            const dtsContent = dtsMap.get(filePath);
+            if (dtsContent) {
+                const dtsPath = headerPath.replace(/\.ts$/, ".d.ts");
+                const dtsEntry = `${dtsPath}:\n\`\`\`\n${dtsContent}\n\`\`\`\n\n`;
+
+                if (charLimit && collected.length + dtsEntry.length > charLimit) {
+                    const remaining = charLimit - collected.length;
+                    if (remaining > 0) collected += dtsEntry.slice(0, remaining);
+                    break;
+                }
+
+                collected += dtsEntry;
+            }
+        }
     }
 
     return collected;

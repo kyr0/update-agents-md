@@ -8,6 +8,7 @@ import { scanDirectory } from "./scan.js";
 import { processFiles } from "./process.js";
 import { replaceOrAppendTags } from "./utils.js";
 import { IGNORE_FILE_PATTERNS } from "./config.js";
+import { generateDtsForFiles } from "./types.js";
 
 export interface RunOptions {
     root: string;
@@ -16,6 +17,7 @@ export interface RunOptions {
     lines?: number;
     chars?: number;
     includePatterns?: Array<string>;
+    dts?: boolean;
 }
 
 export const printHelp = (): void => {
@@ -30,6 +32,7 @@ options:
                            example: -i "*.ts, *.c" includes only .ts and .c files
   -l, --lines <n>          limit each file to n lines
   -c, --chars <n>          limit total output to n chars
+  --dts                    generate .d.ts type declarations for .ts files (uses dts-gen)
   -h, --help               show help
 `.trim());
 };
@@ -62,11 +65,18 @@ export const run = async (opts: RunOptions): Promise<void> => {
     // avoid self-inclusion even if user un-ignores it
     const displayFiles = files.filter((f) => path.basename(f) !== "agents.md");
 
+    // Generate .d.ts type declarations if --dts flag is set
+    let dtsMap: Map<string, string> | undefined;
+    if (opts.dts) {
+        dtsMap = await generateDtsForFiles(displayFiles);
+    }
+
     const sourceCode = await processFiles({
         files: displayFiles,
         root: opts.root,
         lineLimit: opts.lines,
         charLimit: opts.chars,
+        dtsMap,
     });
 
     const agentsMdPath = path.join(opts.root, "agents.md");
@@ -95,6 +105,7 @@ export const main = async (argv: Array<string>): Promise<void> => {
         lines: args.lines,
         chars: args.chars,
         includePatterns: args.includePatterns,
+        dts: args.dts,
     });
 };
 

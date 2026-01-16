@@ -8,6 +8,7 @@ export interface CliArgs {
     targetDir: string;
     help: boolean;
     includePatterns: Array<string>;
+    dts: boolean;
 }
 
 export const parseOptionalInt = (value: unknown, fallback?: unknown): number | undefined => {
@@ -39,7 +40,7 @@ export const parseIncludePatterns = (value: unknown): Array<string> => {
 
 export const parseArgs = (argv: Array<string>): CliArgs => {
     const parsed = minimist(argv, {
-        boolean: ["follow", "docs", "help"],
+        boolean: ["follow", "docs", "help", "dts"],
         string: ["include"],
         alias: {
             f: "follow",
@@ -53,6 +54,7 @@ export const parseArgs = (argv: Array<string>): CliArgs => {
             follow: false,
             docs: false,
             help: false,
+            dts: false,
         },
     });
 
@@ -66,5 +68,7 @@ export const parseArgs = (argv: Array<string>): CliArgs => {
 
     const targetDir = typeof parsed._[0] === "string" ? parsed._[0] : ".";
 
-    return { follow, excludeDocs, lines, chars, targetDir, help: Boolean(parsed.help), includePatterns };
+    const dts = Boolean(parsed.dts);
+
+    return { follow, excludeDocs, lines, chars, targetDir, help: Boolean(parsed.help), includePatterns, dts };
 };
