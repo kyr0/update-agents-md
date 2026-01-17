@@ -101,6 +101,9 @@ update-agents-md [directory] [options]
 | `--include <patterns>` | `-i` | Only include files matching patterns (comma-separated globs) |
 | `--lines <n>` | `-l` | Max lines to include per file |
 | `--chars <n>` | `-c` | Max total characters to collect |
+| `--no-tests` | | Exclude test files (e.g. `*.test.*`, `*.spec.*`) |
+| `--no-styles` | | Exclude style files (e.g. `*.css`, `*.scss`, `*.less`) |
+| `--dts` | | Generate `.d.ts` type declarations for `.ts` files (uses `dts-gen`) |
 | `--help` | `-h` | Show help |
 
 ### Examples
@@ -123,6 +126,15 @@ npx update-agents-md -i "*.ts, *.js"
 
 # Combine options: only TypeScript, exclude docs, limit to 100 lines per file
 npx update-agents-md -d -i "*.ts" -l 100
+
+# Exclude test files
+npx update-agents-md --no-tests
+
+# Exclude style files
+npx update-agents-md --no-styles
+
+# Generate .d.ts for TypeScript files (improves LLM inference context)
+npx update-agents-md --dts
 ```
 
 ## Include Patterns (`-i`)
