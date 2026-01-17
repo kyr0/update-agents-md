@@ -174,6 +174,32 @@ Footer
 
         console.log('✅ Robust replacement checks passed!');
 
+        // 8. Run the tool (With --no-tests)
+        // ============
+        console.log('Testing --no-tests flag...');
+
+        // Create test files
+        await fs.mkdir(path.join(TEST_DIR, '__tests__'), { recursive: true });
+        await fs.writeFile(path.join(TEST_DIR, '__tests__/test.js'), 'test content');
+        await fs.writeFile(path.join(TEST_DIR, 'src/my.test.ts'), 'test content');
+        await fs.writeFile(path.join(TEST_DIR, 'src/my.spec.js'), 'test content');
+
+        await fs.mkdir(path.join(TEST_DIR, 'e2e'), { recursive: true });
+        await fs.writeFile(path.join(TEST_DIR, 'e2e/foo.ts'), 'e2e content');
+
+        // Run with --no-tests
+        await fs.rm(agentsMdPath);
+        await execAsync(`node ${binPath} --no-tests`, { cwd: TEST_DIR });
+        result = await fs.readFile(agentsMdPath, 'utf-8');
+
+        assert.ok(!result.includes('./__tests__/test.js:'), 'Should exclude __tests__ content');
+        assert.ok(!result.includes('./src/my.test.ts:'), 'Should exclude *.test.ts content');
+        assert.ok(!result.includes('./src/my.spec.js:'), 'Should exclude *.spec.js content');
+        assert.ok(!result.includes('./e2e/foo.ts:'), 'Should exclude e2e folder content');
+        assert.ok(result.includes('./src/code.ts:'), 'Should still include normal code');
+
+        console.log('✅ --no-tests checks passed!');
+
     } catch (e) {
         console.error('❌ Check failed:', e.message);
         console.error('Result content was:\n', (await fs.readFile(agentsMdPath, 'utf-8')));

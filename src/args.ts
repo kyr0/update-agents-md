@@ -9,6 +9,7 @@ export interface CliArgs {
     help: boolean;
     includePatterns: Array<string>;
     dts: boolean;
+    noTests: boolean;
 }
 
 export const parseOptionalInt = (value: unknown, fallback?: unknown): number | undefined => {
@@ -40,7 +41,7 @@ export const parseIncludePatterns = (value: unknown): Array<string> => {
 
 export const parseArgs = (argv: Array<string>): CliArgs => {
     const parsed = minimist(argv, {
-        boolean: ["follow", "docs", "help", "dts"],
+        boolean: ["follow", "docs", "help", "dts", "tests"],
         string: ["include"],
         alias: {
             f: "follow",
@@ -55,6 +56,7 @@ export const parseArgs = (argv: Array<string>): CliArgs => {
             docs: false,
             help: false,
             dts: false,
+            tests: true,
         },
     });
 
@@ -69,6 +71,9 @@ export const parseArgs = (argv: Array<string>): CliArgs => {
     const targetDir = typeof parsed._[0] === "string" ? parsed._[0] : ".";
 
     const dts = Boolean(parsed.dts);
+    // if --no-tests is passed, parsed.tests becomes false.
+    // we want noTests to be true in that case.
+    const noTests = parsed.tests === false;
 
-    return { follow, excludeDocs, lines, chars, targetDir, help: Boolean(parsed.help), includePatterns, dts };
+    return { follow, excludeDocs, lines, chars, targetDir, help: Boolean(parsed.help), includePatterns, dts, noTests };
 };

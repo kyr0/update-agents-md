@@ -18,6 +18,7 @@ export interface RunOptions {
     chars?: number;
     includePatterns?: Array<string>;
     dts?: boolean;
+    noTests?: boolean;
 }
 
 export const printHelp = (): void => {
@@ -32,6 +33,7 @@ options:
                            example: -i "*.ts, *.c" includes only .ts and .c files
   -l, --lines <n>          limit each file to n lines
   -c, --chars <n>          limit total output to n chars
+  --no-tests               exclude test files (e.g. *.test.*, *.spec.*)
   --dts                    generate .d.ts type declarations for .ts files (uses dts-gen)
   -h, --help               show help
 `.trim());
@@ -60,6 +62,7 @@ export const run = async (opts: RunOptions): Promise<void> => {
         follow: opts.follow,
         excludeDocs: opts.excludeDocs,
         includePatterns: opts.includePatterns,
+        excludeTests: opts.noTests,
     });
 
     // avoid self-inclusion even if user un-ignores it
@@ -106,6 +109,7 @@ export const main = async (argv: Array<string>): Promise<void> => {
         chars: args.chars,
         includePatterns: args.includePatterns,
         dts: args.dts,
+        noTests: args.noTests,
     });
 };
 

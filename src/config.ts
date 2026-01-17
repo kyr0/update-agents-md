@@ -226,6 +226,15 @@ export const DOCS_FILE_PATTERNS: Array<string> = [
     'CONTRIBUTORS*',
 ];
 
+export const TEST_FILE_PATTERNS: Array<string> = [
+    '**/*.test.*',
+    '**/*.spec.*',
+    '**/test/**',
+    '**/tests/**',
+    '**/__tests__/**',
+    '**/e2e/**',
+];
+
 export const IGNORE_FILES: Array<string> = ['.gitignore', '.agentsignore'];
 
 export const OPEN_TAG = '<full-context-dump>';
