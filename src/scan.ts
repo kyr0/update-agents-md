@@ -2,7 +2,7 @@ import { access, readFile, readdir, realpath, stat } from "node:fs/promises";
 import * as path from "node:path";
 import type { Dirent } from "node:fs";
 import ignore from "ignore";
-import { IGNORE_FILE_PATTERNS, DOCS_FILE_PATTERNS, IGNORE_FILES, TEST_FILE_PATTERNS } from "./config.js";
+import { IGNORE_FILE_PATTERNS, DOCS_FILE_PATTERNS, IGNORE_FILES, TEST_FILE_PATTERNS, STYLES_FILE_PATTERNS } from "./config.js";
 
 export interface ScanOptions {
     cwd: string;
@@ -10,6 +10,7 @@ export interface ScanOptions {
     debug?: boolean;
     excludeDocs?: boolean;
     excludeTests?: boolean;
+    excludeStyles?: boolean;
     /** When provided, only files matching these glob patterns are included (exclusive include mode) */
     includePatterns?: Array<string>;
 }
@@ -215,11 +216,12 @@ export const traverseDirectory = async (
  * recursively scans a directory with layered .gitignore / .agentsignore handling
  */
 export const scanDirectory = async (options: ScanOptions): Promise<Array<string>> => {
-    const { cwd, follow, excludeDocs = false, excludeTests = false, includePatterns = [] } = options;
+    const { cwd, follow, excludeDocs = false, excludeTests = false, excludeStyles = false, includePatterns = [] } = options;
 
     const baseIgnore = IGNORE_FILE_PATTERNS.split(/\r?\n/);
     if (excludeDocs) baseIgnore.push(...DOCS_FILE_PATTERNS);
     if (excludeTests) baseIgnore.push(...TEST_FILE_PATTERNS);
+    if (excludeStyles) baseIgnore.push(...STYLES_FILE_PATTERNS);
 
     const defaultPatterns = processPatterns(baseIgnore, "");
 

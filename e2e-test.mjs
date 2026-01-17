@@ -200,6 +200,26 @@ Footer
 
         console.log('✅ --no-tests checks passed!');
 
+        // 9. Run the tool (With --no-styles)
+        // ============
+        console.log('Testing --no-styles flag...');
+
+        // Create style files
+        await fs.writeFile(path.join(TEST_DIR, 'src/style.scss'), 'body { color: blue; }');
+        await fs.writeFile(path.join(TEST_DIR, 'src/my.less'), 'body { color: green; }');
+
+        // Run with --no-styles
+        await fs.rm(agentsMdPath);
+        await execAsync(`node ${binPath} --no-styles`, { cwd: TEST_DIR });
+        result = await fs.readFile(agentsMdPath, 'utf-8');
+
+        assert.ok(!result.includes('./src/style.css:'), 'Should exclude .css content');
+        assert.ok(!result.includes('./src/style.scss:'), 'Should exclude .scss content');
+        assert.ok(!result.includes('./src/my.less:'), 'Should exclude .less content');
+        assert.ok(result.includes('./src/code.ts:'), 'Should still include normal code');
+
+        console.log('✅ --no-styles checks passed!');
+
     } catch (e) {
         console.error('❌ Check failed:', e.message);
         console.error('Result content was:\n', (await fs.readFile(agentsMdPath, 'utf-8')));

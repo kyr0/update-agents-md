@@ -235,6 +235,16 @@ export const TEST_FILE_PATTERNS: Array<string> = [
     '**/e2e/**',
 ];
 
+export const STYLES_FILE_PATTERNS: Array<string> = [
+    '**/*.css',
+    '**/*.scss',
+    '**/*.sass',
+    '**/*.less',
+    '**/*.styl',
+    '**/*.stylus',
+    '**/*.pcss',
+];
+
 export const IGNORE_FILES: Array<string> = ['.gitignore', '.agentsignore'];
 
 export const OPEN_TAG = '<full-context-dump>';
