@@ -220,6 +220,123 @@ Footer
 
         console.log('✅ --no-styles checks passed!');
 
+        // 10. Test --project flag (explicit project name)
+        // ============
+        console.log('Testing --project flag...');
+        await fs.rm(agentsMdPath);
+        await execAsync(`node ${binPath} --project "test-project"`, { cwd: TEST_DIR });
+        result = await fs.readFile(agentsMdPath, 'utf-8');
+
+        assert.ok(result.includes('<full-context-dump project-name="test-project">'), 
+            'Should include project-name attribute with explicit project');
+        assert.ok(result.includes('./included.txt:'), 'Should still include files');
+
+        console.log('✅ --project flag checks passed!');
+
+        // 11. Test package.json auto-detection
+        // ============
+        console.log('Testing package.json auto-detection...');
+        await fs.writeFile(
+            path.join(TEST_DIR, 'package.json'),
+            JSON.stringify({ name: 'auto-detected-project', version: '1.0.0' })
+        );
+
+        await fs.rm(agentsMdPath);
+        await execAsync(`node ${binPath}`, { cwd: TEST_DIR });
+        result = await fs.readFile(agentsMdPath, 'utf-8');
+
+        assert.ok(result.includes('<full-context-dump project-name="auto-detected-project">'),
+            'Should auto-detect project name from package.json');
+
+        console.log('✅ package.json auto-detection checks passed!');
+
+        // 12. Test --project override of package.json
+        // ============
+        console.log('Testing --project override...');
+        await fs.rm(agentsMdPath);
+        await execAsync(`node ${binPath} --project "override-project"`, { cwd: TEST_DIR });
+        result = await fs.readFile(agentsMdPath, 'utf-8');
+
+        assert.ok(result.includes('<full-context-dump project-name="override-project">'),
+            'Should use --project value over package.json');
+        assert.ok(!result.includes('project-name="auto-detected-project"'),
+            'Should not use package.json name in tag attribute when overridden');
+
+        console.log('✅ --project override checks passed!');
+
+        // 13. Test custom --tag flag
+        // ============
+        console.log('Testing custom --tag flag...');
+        await fs.rm(agentsMdPath);
+        await execAsync(`node ${binPath} --tag "codebase-snapshot"`, { cwd: TEST_DIR });
+        result = await fs.readFile(agentsMdPath, 'utf-8');
+
+        assert.ok(result.includes('<codebase-snapshot'), 'Should use custom tag name');
+        assert.ok(result.includes('</codebase-snapshot>'), 'Should use custom closing tag');
+        assert.ok(!result.includes('<full-context-dump'), 'Should not use default tag name');
+        assert.ok(result.includes('./included.txt:'), 'Should still include files');
+
+        console.log('✅ Custom --tag checks passed!');
+
+        // 14. Test custom tag with project name
+        // ============
+        console.log('Testing custom tag with project name...');
+        await fs.rm(agentsMdPath);
+        await execAsync(`node ${binPath} --tag "custom" --project "my-proj"`, { cwd: TEST_DIR });
+        result = await fs.readFile(agentsMdPath, 'utf-8');
+
+        assert.ok(result.includes('<custom project-name="my-proj">'),
+            'Should use custom tag with project-name attribute');
+        assert.ok(result.includes('</custom>'), 'Should use custom closing tag');
+
+        console.log('✅ Custom tag + project checks passed!');
+
+        // 15. Test tag replacement with same custom tag
+        // ============
+        console.log('Testing tag replacement with same custom tag...');
+        const customTagContent = `
+Header Content
+<custom-tag>
+Old content here
+</custom-tag>
+Footer Content
+`;
+        await fs.writeFile(agentsMdPath, customTagContent);
+        await execAsync(`node ${binPath} --tag "custom-tag"`, { cwd: TEST_DIR });
+        result = await fs.readFile(agentsMdPath, 'utf-8');
+
+        assert.ok(result.includes('Header Content'), 'Should preserve header');
+        assert.ok(result.includes('Footer Content'), 'Should preserve footer');
+        assert.ok(result.includes('<custom-tag'), 'Should use custom tag');
+        assert.ok(!result.includes('Old content here'), 'Should replace old content');
+        assert.ok(result.includes('./included.txt:'), 'Should have new content');
+
+        console.log('✅ Custom tag replacement checks passed!');
+
+        // 16. Test that different tag names don't interfere
+        // ============
+        console.log('Testing different tag names don\'t interfere...');
+        const differentTagContent = `
+Header
+<different-tag>
+Different content
+</different-tag>
+Footer
+`;
+        await fs.writeFile(agentsMdPath, differentTagContent);
+        // Use default tag (full-context-dump)
+        await execAsync(`node ${binPath}`, { cwd: TEST_DIR });
+        result = await fs.readFile(agentsMdPath, 'utf-8');
+
+        // Should append, not replace, because tag names don't match
+        assert.ok(result.includes('Header'), 'Should preserve header');
+        assert.ok(result.includes('Footer'), 'Should preserve footer');
+        assert.ok(result.includes('<different-tag>'), 'Should keep old different tag');
+        assert.ok(result.includes('Different content'), 'Should keep old content');
+        assert.ok(result.includes('<full-context-dump'), 'Should append new default tag');
+
+        console.log('✅ Different tag names checks passed!');
+
     } catch (e) {
         console.error('❌ Check failed:', e.message);
         console.error('Result content was:\n', (await fs.readFile(agentsMdPath, 'utf-8')));

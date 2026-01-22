@@ -159,6 +159,7 @@ dist-newstyle
 
 # --- Documentation & Large Assets ---
 docs
+*.drawio
 *.pdf
 *.jpg
 *.jpeg
@@ -247,5 +248,30 @@ export const STYLES_FILE_PATTERNS: Array<string> = [
 
 export const IGNORE_FILES: Array<string> = ['.gitignore', '.agentsignore'];
 
+export const DEFAULT_TAG_NAME = 'full-context-dump';
+
+/**
+ * Generates an opening tag with optional attributes
+ */
+export const makeOpenTag = (tagName: string = DEFAULT_TAG_NAME, attributes?: Record<string, string>): string => {
+    if (!attributes || Object.keys(attributes).length === 0) {
+        return `<${tagName}>`;
+    }
+
+    const attrString = Object.entries(attributes)
+        .map(([key, value]) => `${key}="${value}"`)
+        .join(' ');
+
+    return `<${tagName} ${attrString}>`;
+};
+
+/**
+ * Generates a closing tag
+ */
+export const makeCloseTag = (tagName: string = DEFAULT_TAG_NAME): string => {
+    return `</${tagName}>`;
+};
+
+// Legacy exports for backward compatibility
 export const OPEN_TAG = '<full-context-dump>';
 export const CLOSE_TAG = '</full-context-dump>';

@@ -11,6 +11,8 @@ export interface CliArgs {
     dts: boolean;
     noTests: boolean;
     noStyles: boolean;
+    project?: string;
+    tag?: string;
 }
 
 export const parseOptionalInt = (value: unknown, fallback?: unknown): number | undefined => {
@@ -43,7 +45,7 @@ export const parseIncludePatterns = (value: unknown): Array<string> => {
 export const parseArgs = (argv: Array<string>): CliArgs => {
     const parsed = minimist(argv, {
         boolean: ["follow", "docs", "help", "dts", "tests", "styles"],
-        string: ["include"],
+        string: ["include", "project", "tag"],
         alias: {
             f: "follow",
             l: "lines",
@@ -51,6 +53,8 @@ export const parseArgs = (argv: Array<string>): CliArgs => {
             d: "docs",
             h: "help",
             i: "include",
+            p: "project",
+            t: "tag",
         },
         default: {
             follow: false,
@@ -78,5 +82,8 @@ export const parseArgs = (argv: Array<string>): CliArgs => {
     const noTests = parsed.tests === false;
     const noStyles = parsed.styles === false;
 
-    return { follow, excludeDocs, lines, chars, targetDir, help: Boolean(parsed.help), includePatterns, dts, noTests, noStyles };
+    const project = typeof parsed.project === "string" && parsed.project.trim() ? parsed.project.trim() : undefined;
+    const tag = typeof parsed.tag === "string" && parsed.tag.trim() ? parsed.tag.trim() : undefined;
+
+    return { follow, excludeDocs, lines, chars, targetDir, help: Boolean(parsed.help), includePatterns, dts, noTests, noStyles, project, tag };
 };

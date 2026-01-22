@@ -101,12 +101,16 @@ update-agents-md [directory] [options]
 | `--include <patterns>` | `-i` | Only include files matching patterns (comma-separated globs) |
 | `--lines <n>` | `-l` | Max lines to include per file |
 | `--chars <n>` | `-c` | Max total characters to collect |
+| `--project <name>` | `-p` | Set project name (adds `project-name` attribute; overrides `package.json`) |
+| `--tag <name>` | `-t` | Use custom tag name instead of `full-context-dump` |
 | `--no-tests` | | Exclude test files (e.g. `*.test.*`, `*.spec.*`) |
 | `--no-styles` | | Exclude style files (e.g. `*.css`, `*.scss`, `*.less`) |
 | `--dts` | | Generate `.d.ts` type declarations for `.ts` files (uses `dts-gen`) |
 | `--help` | `-h` | Show help |
 
 ### Examples
+
+By default, if you want to exclude files, run the tool once, then add exclude patterns to `.agentsignore` and run it again. If you need an *inverse* logic (only include specific files), use the `-i` flag.
 
 ```bash
 # Scan current directory
@@ -118,7 +122,7 @@ npx update-agents-md ./src -l 50
 # Exclude documentation files (LICENSE, README, CHANGELOG, etc.)
 npx update-agents-md -d
 
-# Only include TypeScript files
+# Only include TypeScript files (inverse logic - exclusive include mode)
 npx update-agents-md -i "*.ts"
 
 # Only include TypeScript and JavaScript files
@@ -135,6 +139,55 @@ npx update-agents-md --no-styles
 
 # Generate .d.ts for TypeScript files (improves LLM inference context)
 npx update-agents-md --dts
+
+# Set project name explicitly
+npx update-agents-md -p "my-awesome-project"
+
+# Use a custom tag name
+npx update-agents-md -t "codebase-snapshot"
+```
+
+## Project Name (`-p`)
+
+The `--project` flag adds a `project-name` attribute to the output tag:
+
+```markdown
+<full-context-dump project-name="my-project">
+...
+</full-context-dump>
+```
+
+**Auto-detection**: If `package.json` exists in the target directory and contains a `name` field, it's automatically used as the project name. The `-p` flag overrides this.
+
+```bash
+# Auto-detect from package.json
+npx update-agents-md
+
+# Override with explicit name
+npx update-agents-md -p "my-custom-name"
+```
+
+## Custom Tag Names (`-t`)
+
+The `--tag` flag lets you customize the XML tag name used in the output:
+
+```bash
+# Use a custom tag instead of 'full-context-dump'
+npx update-agents-md -t "codebase-snapshot"
+```
+
+**⚠️ Important**: If you change the tag name, the tool can only update `agents.md` files that use the **same tag name**. Files with different tag names won't be recognized or updated. If you need to migrate from one tag name to another, you'll need to manually edit the existing `agents.md` file or delete it and regenerate.
+
+```markdown
+<!-- This file uses the default tag -->
+<full-context-dump>
+...
+</full-context-dump>
+
+<!-- This file uses a custom tag - requires --tag "codebase" to update -->
+<codebase>
+...
+</codebase>
 ```
 
 ## Include Patterns (`-i`)
@@ -188,6 +241,17 @@ The tool writes to `agents.md` using this format:
 
 ./path/to/another.js:
 ```js
+// file contents
+```
+</full-context-dump>
+```
+
+With a project name:
+
+```markdown
+<full-context-dump project-name="my-project">
+./src/index.ts:
+```ts
 // file contents
 ```
 </full-context-dump>

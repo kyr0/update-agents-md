@@ -20,6 +20,8 @@ export interface RunOptions {
     dts?: boolean;
     noTests?: boolean;
     noStyles?: boolean;
+    project?: string;
+    tag?: string;
 }
 
 export const printHelp = (): void => {
@@ -34,11 +36,27 @@ options:
                            example: -i "*.ts, *.c" includes only .ts and .c files
   -l, --lines <n>          limit each file to n lines
   -c, --chars <n>          limit total output to n chars
+  -p, --project <name>     set project name (overrides package.json)
+  -t, --tag <name>         use custom tag name (default: full-context-dump)
   --no-tests               exclude test files (e.g. *.test.*, *.spec.*)
   --no-styles              exclude style files (e.g. *.css, *.scss)
   --dts                    generate .d.ts type declarations for .ts files (uses dts-gen)
   -h, --help               show help
 `.trim());
+};
+
+/**
+ * Attempts to read package.json and extract the project name
+ */
+export const readPackageJsonName = async (root: string): Promise<string | undefined> => {
+    try {
+        const pkgPath = path.join(root, "package.json");
+        const content = await readFile(pkgPath, "utf-8");
+        const pkg = JSON.parse(content);
+        return typeof pkg.name === "string" && pkg.name.trim() ? pkg.name.trim() : undefined;
+    } catch {
+        return undefined;
+    }
 };
 
 export const ensureDefaultAgentsIgnore = async (root: string): Promise<void> => {
@@ -88,7 +106,13 @@ export const run = async (opts: RunOptions): Promise<void> => {
     const agentsMdPath = path.join(opts.root, "agents.md");
     const existingContent = await readFile(agentsMdPath, "utf-8").catch(() => "");
 
-    const newContent = replaceOrAppendTags(existingContent, sourceCode);
+    // Build attributes if project name is set
+    const attributes: Record<string, string> = {};
+    if (opts.project) {
+        attributes["project-name"] = opts.project;
+    }
+
+    const newContent = replaceOrAppendTags(existingContent, sourceCode, opts.tag, attributes);
     await writeFile(agentsMdPath, newContent, "utf-8");
 
     console.log(`Successfully updated ${agentsMdPath} with ${displayFiles.length} files.`);
@@ -104,6 +128,12 @@ export const main = async (argv: Array<string>): Promise<void> => {
 
     const root = path.resolve(args.targetDir);
 
+    // Auto-detect project name from package.json, unless overridden by --project
+    let projectName = args.project;
+    if (!projectName) {
+        projectName = await readPackageJsonName(root);
+    }
+
     await run({
         root,
         follow: args.follow,
@@ -114,6 +144,8 @@ export const main = async (argv: Array<string>): Promise<void> => {
         dts: args.dts,
         noTests: args.noTests,
         noStyles: args.noStyles,
+        project: projectName,
+        tag: args.tag,
     });
 };
 
